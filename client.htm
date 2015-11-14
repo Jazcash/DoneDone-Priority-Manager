@@ -1,0 +1,87 @@
+<head>
+	<meta charset="utf-8">
+	<link href="reset.min.css" type="text/css" rel="stylesheet">
+</head>
+<body>
+	<div id="issueLists">
+		<ul id="activeIssues" class="tasks"></ul>
+	</div>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.4.2/Sortable.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.7/socket.io.min.js"></script>
+	<script>
+		var socket = io();
+		var activeIssuesElement = document.getElementById('activeIssues');
+		var sortable = Sortable.create(activeIssuesElement, {
+			handle: ".drag-handle",
+			ghostClass: "ghost",
+			onEnd: function (event) {
+				socket.emit('moveIssue', event.oldIndex, event.newIndex);
+			},
+		});
+
+		socket.on('allIssues', function(issues){
+			$(activeIssuesElement).empty();
+			issues.forEach(function(issue){
+				addIssue(issue);
+			});
+		});
+
+		socket.on('addIssue', function(issue){
+			addIssue(issue);
+		});
+
+		socket.on('removeIssue', function(issueId){
+			removeIssue(issueId);
+		});
+
+		socket.on('updateIssues', function(issues){
+			issues.forEach(function(issue){
+				updateIssue(issue);
+			});
+		});
+
+		function updateIssue(issue){
+			$("#"+issue.id+" .title").text(issue.title);
+		}
+
+		function addIssue(issue){
+			$(activeIssuesElement).append('<li id='+issue.id+'><span class="drag-handle">☰</span><span class="title">'+issue.title+'</span></li>');
+		}
+
+		function removeIssue(issueId){
+			$("#"+issueId+"").remove();
+		}
+	</script>
+
+	<style>
+		#issueLists{
+			padding: 2em;
+			display: flex;
+			flex-wrap: wrap;
+			margin: 10px;
+		}
+		li{
+			display: flex;
+			background: #eee;
+		}
+		li:not(:last-child){
+			margin-bottom: 10px;
+		}
+		li span {
+			padding: 10px;
+		}
+		li .drag-handle{
+			cursor: move;
+			cursor: -webkit-grabbing;
+			background: #ccc;
+		}
+		li .title{
+			
+		}
+		.ghost {
+			opacity: 0.3;
+		}
+	</style>
+</body>
