@@ -3,6 +3,7 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var request = require('request')
+var syncrequest = require('sync-request');
 var _ = require('lodash');
 var fs = require('fs');
 
@@ -11,35 +12,59 @@ var rate = 3600; // donedone rate limit is 500 requests per 30 minutes
 var subdomain = "apitesting";
 var username = "jazcash";
 var apikey = fs.readFileSync('apikey.txt'); // read donedone apikey from file
-var	action = "/issues/all_active.json";
-var url = "https://" + username + ":" + apikey + "@" + subdomain + ".mydonedone.com/issuetracker/api/v2" + action;
+var apiurl = "https://" + username + ":" + apikey + "@" + subdomain + ".mydonedone.com/issuetracker/api/v2"
+
+var companyDetails = getCompanyDetails(getAllCompanies()[0].id);
+var companyName = companyDetails.name;
+var people = companyDetails.people;
+
+updateIssues();
+//setInterval(updateIssues, rate);
+
+io.on('connection', function(socket){
+	console.log("A user connected");
+	socket.emit('init', companyName, people);
+	socket.emit('allIssues', issues);
+
+	socket.on('moveIssue', function(indexA, indexB){
+		move(issues, indexA, indexB);
+		socket.broadcast.emit('allIssues', issues)
+	});
+
+	socket.on('disconnect', function(){
+		console.log('A user disconnected');
+	});
+});
+app.use(express.static('public'));
+app.get('/', function(req, res){
+	res.sendFile(__dirname + '/client.htm');
+});
+http.listen(3000, function(){
+	console.log('listening on *:3000');
+});
 
 function updateIssues(){
-	request(url, function (error, response, body) {
-		var newIssues = JSON.parse(body).issues;
+	var newIssues = getAllActiveIssues().issues;
 
-		newIssues.forEach(function(newIssue, index, array){
-			newIssue.id = newIssue.project.id + "" + newIssue.order_number;
+	newIssues.forEach(function(newIssue, index, array){
+		newIssue.id = newIssue.project.id + "" + newIssue.order_number;
 
-			var issueIndex = indexOfIssueById(issues, newIssue.id);
-			if (issueIndex === -1){ // add new issue
-				issues.push(newIssue);
-				io.emit('addIssue', newIssue);
-			} else { // update existing issue
-				issues[issueIndex] = newIssue;
-				io.emit('updateIssues', issues);
-			}
-		});
+		var issueIndex = indexOfIssueById(issues, newIssue.id);
+		if (issueIndex === -1){ // add new issue
+			issues.push(newIssue);
+			io.emit('addIssue', newIssue);
+		} else { // update existing issue
+			issues[issueIndex] = newIssue;
+			io.emit('updateIssues', issues);
+		}
+	});
 
-		issues.forEach(function(issue, index, array){
-			var newIssueIndex = indexOfIssueById(newIssues, issue.id);
-			if (newIssueIndex === -1){ // delete old issue
-				array.splice(index, 1);
-				io.emit('removeIssue', issue.id);
-			}
-		});
-
-		//console.log(_.pluck(issues, "title"));
+	issues.forEach(function(issue, index, array){
+		var newIssueIndex = indexOfIssueById(newIssues, issue.id);
+		if (newIssueIndex === -1){ // delete old issue
+			array.splice(index, 1);
+			io.emit('removeIssue', issue.id);
+		}
 	});
 }
 
@@ -52,29 +77,17 @@ function move(array, fromIndex, toIndex) {
     return array;
 } 
 
-updateIssues();
-setInterval(updateIssues, rate);
+function getAllCompanies(){
+	var res = syncrequest('GET', apiurl + "/companies.json");
+	return JSON.parse(res.getBody());
+}
 
-io.on('connection', function(socket){
-	console.log("A user connected");
-	socket.emit('allIssues', issues);
+function getCompanyDetails(companyId){
+	var res = syncrequest('GET', apiurl + "/companies/"+companyId+".json");
+	return JSON.parse(res.getBody());
+}
 
-	socket.on('moveIssue', function(indexA, indexB){
-		move(issues, indexA, indexB);
-		socket.broadcast.emit('allIssues', issues)
-	});
-
-	socket.on('disconnect', function(){
-		console.log('A user disconnected');
-	});
-});
-
-app.use(express.static('public'));
-
-app.get('/', function(req, res){
-	res.sendFile(__dirname + '/client.htm');
-});
-
-http.listen(3000, function(){
-	console.log('listening on *:3000');
-});
+function getAllActiveIssues(){
+	var res = syncrequest('GET', apiurl + "/issues/all_active.json");
+	return JSON.parse(res.getBody());
+}
