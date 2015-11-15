@@ -7,12 +7,12 @@ var syncrequest = require('sync-request');
 var _ = require('lodash');
 var fs = require('fs');
 
-var issues = [];
-var rate = 3600; // donedone rate limit is 500 requests per 30 minutes
 var subdomain = "apitesting";
 var username = "jazcash";
 var apikey = fs.readFileSync('apikey.txt'); // read donedone apikey from file
 var apiurl = "https://" + username + ":" + apikey + "@" + subdomain + ".mydonedone.com/issuetracker/api/v2"
+var issues = [];
+var rate = 3600; // donedone rate limit is 500 requests per 30 minutes
 
 var companyDetails = getCompanyDetails(getAllCompanies()[0].id);
 var companyName = companyDetails.name;

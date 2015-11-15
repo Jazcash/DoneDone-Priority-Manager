@@ -16,7 +16,11 @@
 			group: "shared",
 			handle: ".drag-handle",
 			ghostClass: "ghost",
-			onEnd: function (event){
+			onSort: function (event){
+                if (event.from === event.to && event.oldIndex === event.newIndex) return;
+                var fromPerson = event.from.id;
+                var toPerson = event.to.id;
+                var issueId = event.item.id;
 				socket.emit('moveIssue', event.oldIndex, event.newIndex);
 			}
 		};
@@ -24,7 +28,7 @@
 		socket.on('init', function(companyName, people){
 			$('h1').text(companyName + " DoneDone Manager");
 			people.forEach(function(person){
-				$('#issueLists').append('<div class="block"><div class="person">'+person.first_name+'</div><ul id='+person.id+'></ul></div>');
+				$('#issueLists').append('<div class="block"><span class="person">'+person.first_name+'</span><ul id='+person.id+'></ul></div>');
 				Sortable.create($('#'+person.id)[0], sortableOptions);
 			});
 		});
@@ -51,7 +55,8 @@
 		});
 
 		function updateIssue(issue){
-			$("#"+issue.id+" .title").text(issue.title);
+			$("li#"+issue.id+" .title").text(issue.title);
+            $("li#"+issue.id+"").removeClass().addClass("priority-"+issue.priority.name.toLowerCase());
 		}
 
 		function addIssue(issue){
@@ -63,7 +68,7 @@
 		}
 
 		function removeIssue(issueId){
-			$("#"+issueId+"").remove();
+			$("li#"+issueId).remove();
 		}
 	</script>
 
@@ -81,29 +86,32 @@
 			padding-bottom: 0.5em;
 		}
 		#issueLists{
-			//display: flex;
-			//flex-wrap: wrap;
 			-webkit-column-count: 2;
 		}
+        @media screen and (max-width: 800px) {
+            #issueLists{
+                -webkit-column-count: 1;
+            }
+        }
 		.block{
 			position: relative;
-			margin: 10px 10px;
-			min-width: 400px;
-			max-width: 400px;
+            min-width: 100%;
 			box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.2);
 			background: #ddd;
 			display: inline-block;
+            margin: 10px 0;
 		}
 		.person{
 			position: absolute;
 			top: 0px;
 			left: 0px;
 			margin-top: -10px;
-			margin-left: -5px;
+			margin-left: 5px;
 			padding: 5px 10px;
 			background: #7C4DFF;
 			color: #fff;
 			box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.2);
+            display: flex;
 		}
 		ul {
 			padding: 25px 10px 10px 10px;
