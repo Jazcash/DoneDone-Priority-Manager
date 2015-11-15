@@ -7,19 +7,27 @@ var syncrequest = require('sync-request');
 var _ = require('lodash');
 var fs = require('fs');
 
-var subdomain = "apitesting";
-var username = "jazcash";
-var apikey = fs.readFileSync('apikey.txt'); // read donedone apikey from file
-var apiurl = "https://" + username + ":" + apikey + "@" + subdomain + ".mydonedone.com/issuetracker/api/v2"
+var subdomain = "quba"; //"apitesting";
+var username = "jcashmore"; //"jazcash";
+var key = fs.readFileSync('key.txt');
+var apiurl = "https://" + username + ":" + key + "@" + subdomain + ".mydonedone.com/issuetracker/api/v2"
+var colours = JSON.parse(fs.readFileSync('colours.json'));
 var issues = [];
-var rate = 3600; // donedone rate limit is 500 requests per 30 minutes
+var rate = 4000; // donedone rate limit is 500 requests per 30 minutes (every 3600ms)
 
-var companyDetails = getCompanyDetails(getAllCompanies()[0].id);
-var companyName = companyDetails.name;
-var people = companyDetails.people;
+// company methods require admin access
+//var companyDetails getCompanyDetails(getAllCompanies()[0].id);
+var companyName = "Quba"; //companyDetails.name;
+var people = getPeopleInProject("34690"); //companyDetails.people;
+people.forEach(function(person){
+	person.colour = colours[Math.floor(Math.random() * colours.length)];
+});
 
+console.log("Initilising...");
 updateIssues();
 setInterval(updateIssues, rate);
+
+console.log("Serving data to clients!");
 
 io.on('connection', function(socket){
 	console.log("A user connected");
@@ -50,6 +58,7 @@ function updateIssues(){
 
 	newIssues.forEach(function(newIssue, index, array){
 		newIssue.id = newIssue.project.id + "" + newIssue.order_number;
+		newIssue.url = getIssueUrl(newIssue);
 
 		var issueIndex = getIndexOfIssue(issues, newIssue.id);
 		if (issueIndex == -1){ // add new issue
@@ -105,6 +114,15 @@ function getCompanyDetails(companyId){
 }
 
 function getAllActiveIssues(){
-	var res = syncrequest('GET', apiurl + "/issues/all_active.json");
+	var res = syncrequest('GET', apiurl + "/issues/all_active.json?take=500"); // bad
 	return JSON.parse(res.getBody());
+}
+
+function getPeopleInProject(projectId){
+	var res = syncrequest('GET', apiurl + "/projects/"+projectId+"/people.json");
+	return JSON.parse(res.getBody());
+}
+
+function getIssueUrl(issue){
+	return "https://" + subdomain + ".mydonedone.com/issuetracker/projects/" + issue.project.id + "/issues/" + issue.order_number;
 }

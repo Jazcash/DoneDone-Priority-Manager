@@ -5,6 +5,7 @@
 </head>
 <body>
 	<h1></h1>
+	<h2 style="display: none;">Server crashed or was stopped</h2>
 	<div id="issueLists"></div>
 
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
@@ -28,10 +29,19 @@
 		};
 
 		socket.on('init', function(companyName, people){
-			$('h1').text(companyName + " DoneDone Manager");
+			$("h2").hide();
+			$("h1").text(companyName + " DoneDone Manager");
 			people.forEach(function(person){
-				$('#issueLists').append('<div class="block"><span class="person">'+person.first_name+'</span><ul id='+person.id+'></ul></div>');
+				$("#issueLists").append('\
+					<div class="block">\
+						<span class="person" style="background:'+person.colour.background+';color:'+person.colour.text+';">'+
+							person.name.split(" ")[0]+'\
+						</span>\
+						<ul id='+person.id+'></ul>\
+					</div>\
+				');
 				Sortable.create($('#'+person.id)[0], sortableOptions);
+				updateVisibility(person.id);
 			});
 		});
 
@@ -56,6 +66,7 @@
 
 		socket.on('disconnect', function(){
 			$("#issueLists").empty();
+			$("h2").show();
 		});
 
 		function updateIssue(issue){
@@ -70,15 +81,30 @@
 		}
 
 		function addIssue(issue){
-			if ($('#issueLists #'+issue.fixer.id).length){
-				$('#issueLists #'+issue.fixer.id).append('<li id='+issue.id+' class=priority-'+issue.priority.name.toLowerCase()+'><span class="drag-handle">☰</span><span class="title">'+issue.title+'</span></li>');
-			} else {
-				$('#issueLists').append('<ul id="activeIssues"><li id="'+issue.id+'><span class="drag-handle">☰</span><span class="title">'+issue.title+'</span></li></ul>');
+			if ($("ul#"+issue.fixer.id).length){
+				$("ul#"+issue.fixer.id).append('\
+					<li id='+issue.id+' class=priority-'+issue.priority.name.toLowerCase()+'>\
+						<span class="drag-handle">☰</span>\
+						<a class="title dont-break-out" target="_blank" href="'+issue.url+'">'+issue.title+'</a>\
+					</li>\
+				');
 			}
+
+			updateVisibility(issue.fixer.id);
 		}
 
 		function removeIssue(issueId){
+			var personId = $("li#"+issueId).parent().attr("id");
 			$("li#"+issueId).remove();
+			updateVisibility(personId);
+		}
+
+		function updateVisibility(personId){
+			if ($("ul#"+personId).children().length < 1){
+				$("ul#"+personId).parent().hide();
+			} else {
+				$("ul#"+personId).parent().show();
+			}
 		}
 	</script>
 
@@ -87,55 +113,75 @@
 			font-family: 'Roboto', sans-serif;
 			font-weight: 300;
 			font-size: 16px;
-			background: #eee;
+			background: #F5F5F5;
 			padding: 1em;
 		}
 		h1{
 			text-align: center;
 			font-size: 2em;
+			color: #444;
+			padding-bottom: 0.5em;
+		}
+		h2{
+			text-align: center;
+			font-size: 1.4em;
+			color: #777;
 			padding-bottom: 0.5em;
 		}
 		#issueLists{
-			-webkit-column-count: 2;
+			-webkit-column-count: 1;
+			-moz-column-count: 1;
+			column-count: 1;
 		}
-		@media screen and (max-width: 800px) {
+		@media screen and (min-width: 800px) {
 			#issueLists{
-				-webkit-column-count: 1;
+				-webkit-column-count: 2;
+				-moz-column-count: 2;
+				column-count: 3;
+			}
+		}
+		@media screen and (min-width: 1300px) {
+			#issueLists{
+				-webkit-column-count: 3;
+				-moz-column-count: 3;
+				column-count: 3;
 			}
 		}
 		.block{
 			position: relative;
 			min-width: 100%;
-			box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.2);
-			background: #ddd;
 			display: inline-block;
 			margin: 10px 0;
+			padding: 0 5px;
 		}
 		.person{
 			position: absolute;
 			top: 0px;
 			left: 0px;
 			margin-top: -10px;
-			margin-left: 5px;
+			margin-left: 15px;
 			padding: 5px 10px;
-			background: #7C4DFF;
-			color: #fff;
-			box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.2);
+			box-shadow: 0 2px 2px 0 rgba(0,0,0,.14),0 3px 1px -2px rgba(0,0,0,.2),0 1px 5px 0 rgba(0,0,0,.12);
 			display: flex;
+			font-size: 24px;
 		}
 		ul {
-			padding: 25px 10px 10px 10px;
-			min-height: 50px;
+			padding: 35px 10px 10px 10px;
+			box-shadow: 0 2px 2px 0 rgba(0,0,0,.14),0 3px 1px -2px rgba(0,0,0,.2),0 1px 5px 0 rgba(0,0,0,.12);
+			border-radius: 2px;
+			background: #fff;
 		}
 		li{
 			display: flex;
-			background: red;
-			box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.2);
+			box-shadow: 0 2px 2px 0 rgba(0,0,0,.14),0 3px 1px -2px rgba(0,0,0,.2),0 1px 5px 0 rgba(0,0,0,.12);
+		}
+		li:hover{
+			color: red;
 		}
 		li:not(:last-child){
 			margin-bottom: 10px;
 		}
-		li span {
+		li > * {
 			padding: 10px;
 		}
 		li .drag-handle{
@@ -145,7 +191,20 @@
 			color: #fff;
 		}
 		li .title{
+			width: 100%;
 			color: #fff;
+			text-decoration: none;
+		}
+		.dont-break-out{
+			overflow-wrap: break-word;
+			word-wrap: break-word;
+			-ms-word-break: break-all;
+			word-break: break-all;
+			word-break: break-word;
+			-ms-hyphens: auto;
+			-moz-hyphens: auto;
+			-webkit-hyphens: auto;
+			hyphens: auto;
 		}
 		.priority-low{
 			background: #6DA79B;
