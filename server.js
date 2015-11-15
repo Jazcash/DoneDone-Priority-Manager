@@ -19,15 +19,17 @@ var companyName = companyDetails.name;
 var people = companyDetails.people;
 
 updateIssues();
-//setInterval(updateIssues, rate);
+setInterval(updateIssues, rate);
 
 io.on('connection', function(socket){
 	console.log("A user connected");
 	socket.emit('init', companyName, people);
 	socket.emit('allIssues', issues);
 
-	socket.on('moveIssue', function(indexA, indexB){
-		move(issues, indexA, indexB);
+	socket.on('moveIssue', function(event){
+		var issuesOldIndex = getAbsoluteIndexFromRelativeIndex(event.oldFixerId, event.oldIndex);
+		var issuesNewIndex = getAbsoluteIndexFromRelativeIndex(event.newFixerId, event.newIndex);
+		move(issues, issuesOldIndex, issuesNewIndex);
 		socket.broadcast.emit('allIssues', issues)
 	});
 
@@ -49,18 +51,18 @@ function updateIssues(){
 	newIssues.forEach(function(newIssue, index, array){
 		newIssue.id = newIssue.project.id + "" + newIssue.order_number;
 
-		var issueIndex = indexOfIssueById(issues, newIssue.id);
-		if (issueIndex === -1){ // add new issue
+		var issueIndex = getIndexOfIssue(issues, newIssue.id);
+		if (issueIndex == -1){ // add new issue
 			issues.push(newIssue);
 			io.emit('addIssue', newIssue);
 		} else { // update existing issue
 			issues[issueIndex] = newIssue;
-			io.emit('updateIssues', issues);
+			io.emit('updateIssue', issues[issueIndex]);
 		}
 	});
 
 	issues.forEach(function(issue, index, array){
-		var newIssueIndex = indexOfIssueById(newIssues, issue.id);
+		var newIssueIndex = getIndexOfIssue(newIssues, issue.id);
 		if (newIssueIndex === -1){ // delete old issue
 			array.splice(index, 1);
 			io.emit('removeIssue', issue.id);
@@ -68,14 +70,29 @@ function updateIssues(){
 	});
 }
 
-function indexOfIssueById(issueList, id){
-	return _.indexOf(_.pluck(issueList, 'id'), id);
+function getAbsoluteIndexFromRelativeIndex(fixerId, relIndex){
+	var item = issues
+		.map(function(el, index) {
+			return {
+				el: el,
+				index: index
+			};
+		})
+		.filter(function(el) {
+			return el.el.fixer.id == fixerId;
+		})[relIndex];
+
+	return item ? item.index : -1;
+}
+
+function getIndexOfIssue(issueList, issueId){
+	return _.indexOf(_.pluck(issueList, 'id'), issueId);
 }
 
 function move(array, fromIndex, toIndex) {
-    array.splice(toIndex, 0, array.splice(fromIndex, 1)[0] );
-    return array;
-} 
+	array.splice(toIndex, 0, array.splice(fromIndex, 1)[0] );
+	return array;
+}
 
 function getAllCompanies(){
 	var res = syncrequest('GET', apiurl + "/companies.json");

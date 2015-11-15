@@ -13,15 +13,17 @@
 	<script>
 		var socket = io();
 		var sortableOptions = {
-			group: "shared",
+			//group: "shared",  // allows draging between lists
 			handle: ".drag-handle",
 			ghostClass: "ghost",
 			onSort: function (event){
-                if (event.from === event.to && event.oldIndex === event.newIndex) return;
-                var fromPerson = event.from.id;
-                var toPerson = event.to.id;
-                var issueId = event.item.id;
-				socket.emit('moveIssue', event.oldIndex, event.newIndex);
+				socket.emit('moveIssue', {
+					oldIndex: event.oldIndex,
+					newIndex: event.newIndex,
+					oldFixerId: event.from.id,
+					newFixerId: event.to.id,
+					issueId: event.item.id
+				});
 			}
 		};
 
@@ -48,15 +50,23 @@
 			removeIssue(issueId);
 		});
 
-		socket.on('updateIssues', function(issues){
-			issues.forEach(function(issue){
-				updateIssue(issue);
-			});
+		socket.on('updateIssue', function(issue){
+			updateIssue(issue);
+		});
+
+		socket.on('disconnect', function(){
+			$("#issueLists").empty();
 		});
 
 		function updateIssue(issue){
-			$("li#"+issue.id+" .title").text(issue.title);
-            $("li#"+issue.id+"").removeClass().addClass("priority-"+issue.priority.name.toLowerCase());
+			if (issue.fixer.id != $("li#"+issue.id).parent().attr('id'))
+				$("li#"+issue.id).appendTo('ul#'+issue.fixer.id);
+
+			if ($("li#"+issue.id+" .title").text() !== issue.title)
+				$("li#"+issue.id+" .title").text(issue.title);
+
+			if (!($("li#"+issue.id).hasClass("priority-"+issue.priority.name.toLowerCase())))
+				$("li#"+issue.id).removeClass().addClass("priority-"+issue.priority.name.toLowerCase());
 		}
 
 		function addIssue(issue){
@@ -88,18 +98,18 @@
 		#issueLists{
 			-webkit-column-count: 2;
 		}
-        @media screen and (max-width: 800px) {
-            #issueLists{
-                -webkit-column-count: 1;
-            }
-        }
+		@media screen and (max-width: 800px) {
+			#issueLists{
+				-webkit-column-count: 1;
+			}
+		}
 		.block{
 			position: relative;
-            min-width: 100%;
+			min-width: 100%;
 			box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.2);
 			background: #ddd;
 			display: inline-block;
-            margin: 10px 0;
+			margin: 10px 0;
 		}
 		.person{
 			position: absolute;
@@ -111,7 +121,7 @@
 			background: #7C4DFF;
 			color: #fff;
 			box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.2);
-            display: flex;
+			display: flex;
 		}
 		ul {
 			padding: 25px 10px 10px 10px;
