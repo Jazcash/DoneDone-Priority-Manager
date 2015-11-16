@@ -4,6 +4,8 @@ Put your DoneDone password or API key in a file named key.txt
 
 ## Todo
 
+- [ ] Fix the lag with many issues
+- [ ] Add more server console options and data/info about clients, api etc
 - [ ] DoneDone authentication and sessions
 - [ ] Support 500+ issue fetches
 - [ ] Local storage of issue orders
