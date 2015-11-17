@@ -57,7 +57,7 @@
 		});
 
 		socket.on("moveIssue", function(event){
-			moveIssue(event.issueId, newFixerId, newIndex);
+			moveIssue(event.issueId, event.oldFixerId, event.oldIndex, event.newFixerId, event.newIndex);
 		});
 
 		socket.on("addIssue", function(issue){
@@ -107,13 +107,21 @@
 			updateVisibility(personId);
 		}
 
-		function moveIssue(issueId, newFixerId, newIndex){
-			// if (newIndex == 0){
-			// 	$("li#"+issueId).prependTo("ul#"+newFixerId);
-			// } else {
-			// 	$("li#"+issueId).insertBefore($("ul#"+newFixerId).children().eq(newIndex));
-			// }
-			// very difficult logic needs to go here :(
+		function moveIssue(issueId, oldFixerId, oldIndex, newFixerId, newIndex){
+			if (oldFixerId == newFixerId){
+				if (oldIndex - newIndex > 0){
+					$('#'+issueId).insertBefore($("ul#"+newFixerId).children().eq(newIndex))
+				} else if (oldIndex - newIndex < 0){
+					$('#'+issueId).insertAfter($("ul#"+newFixerId).children().eq(newIndex))
+				}
+			} else {
+				// code for changing fixer between users - not tested!
+				if (newIndex == 0){
+					$("li#"+issueId).prependTo("ul#"+newFixerId);
+				} else {
+					$("li#"+issueId).insertBefore($("ul#"+newFixerId).children().eq(newIndex));
+				}
+			}
 		}
 
 		function updateVisibility(personId){

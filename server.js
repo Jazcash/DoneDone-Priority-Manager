@@ -25,12 +25,13 @@ people.forEach(function(person){
 var issues = [];
 try {
 	stats = fs.lstatSync("issues.json");
-	if (stats.isDirectory()) {
+	if (stats.isFile()) {
 		issues = JSON.parse(fs.readFileSync("issues.json"));
 	}
+    console.log("Using stored issues.json file!");
 } catch (e) {
-	console.log(e);
-	console.log("file reading or json parsing failed");
+	//console.log(e);
+	console.log("issues.json not found or failed to parse");
 } finally {
 	updateIssues();
 }
@@ -51,8 +52,11 @@ io.on("connection", function(socket){
 		move(issues, issuesOldIndex, issuesNewIndex);
 
 		fs.writeFile("issues.json", JSON.stringify(issues), function(err){
-			if (err) throw err;
-			console.log(socket.id, " changed an issue's priority");
+			if (err){
+                console.log("error");
+                console.log(err);
+            }
+			console.log(socket.id, " changed an issue's priority, wrote to issues.json");
 		});
 
 		socket.broadcast.emit("moveIssue", event);
@@ -79,9 +83,11 @@ function updateIssues(){
 
 		var issueIndex = getIndexOfIssue(issues, newIssue.id);
 		if (issueIndex == -1){ // add new issue
+            //console.log("adding issue", newIssue.id);
 			issues.push(newIssue);
 			io.emit("addIssue", newIssue);
 		} else { // update existing issue
+            //console.log("updating issue", newIssue.id);
 			issues[issueIndex] = newIssue; // should really be doing difference checks instead of client-side
 			io.emit("updateIssue", issues[issueIndex]);
 		}
@@ -90,6 +96,7 @@ function updateIssues(){
 	issues.forEach(function(issue, index, array){
 		var newIssueIndex = getIndexOfIssue(newIssues, issue.id);
 		if (newIssueIndex === -1){ // delete old issue
+            //console.log("removing issue", newIssue.id);
 			array.splice(index, 1);
 			io.emit("removeIssue", issue.id);
 		}
@@ -112,11 +119,11 @@ function getAbsoluteIndexFromRelativeIndex(fixerId, relIndex){
 }
 
 function getIndexOfIssue(issueList, issueId){
-	return _.indexOf(_.pluck(issueList, "id"), issueId);
+    return _.findIndex(issueList, {id: issueId});
 }
 
 function move(array, fromIndex, toIndex) {
-	array.splice(toIndex, 0, array.splice(fromIndex, 1)[0] );
+	array.splice(toIndex, 0, array.splice(fromIndex, 1)[0]);
 	return array;
 }
 
@@ -131,7 +138,7 @@ function getCompanyDetails(companyId){
 }
 
 function getAllActiveIssues(){
-	var res = syncrequest("GET", apiurl + "/issues/all_active.json?take=500"); // bad
+	var res = syncrequest("GET", apiurl + "/issues/all_active.json?take=5"); // bad
 	return JSON.parse(res.getBody());
 }
 
