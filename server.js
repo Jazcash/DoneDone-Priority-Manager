@@ -1,19 +1,18 @@
-var express = require('express');
+var express = require("express");
 var app = express();
-var http = require('http').Server(app);
-var io = require('socket.io')(http);
-var request = require('request')
-var syncrequest = require('sync-request');
-var _ = require('lodash');
-var fs = require('fs');
+var http = require("http").Server(app);
+var io = require("socket.io")(http);
+var request = require("request")
+var syncrequest = require("sync-request");
+var _ = require("lodash");
+var fs = require("fs");
 
 var subdomain = "quba"; //"apitesting";
 var username = "jcashmore"; //"jazcash";
-var key = fs.readFileSync('key.txt');
+var key = fs.readFileSync("key.txt");
 var apiurl = "https://" + username + ":" + key + "@" + subdomain + ".mydonedone.com/issuetracker/api/v2"
-var colours = JSON.parse(fs.readFileSync('colours.json'));
-var issues = [];
-var rate = 4000; // donedone rate limit is 500 requests per 30 minutes (every 3600ms)
+var colours = JSON.parse(fs.readFileSync("colours.json"));
+var rate = 15000; // donedone rate limit is 500 requests per 30 minutes (every 3600ms)
 
 // company methods require admin access
 //var companyDetails getCompanyDetails(getAllCompanies()[0].id);
@@ -23,34 +22,52 @@ people.forEach(function(person){
 	person.colour = colours[Math.floor(Math.random() * colours.length)];
 });
 
+var issues = [];
+try {
+	stats = fs.lstatSync("issues.json");
+	if (stats.isDirectory()) {
+		issues = JSON.parse(fs.readFileSync("issues.json"));
+	}
+} catch (e) {
+	console.log(e);
+	console.log("file reading or json parsing failed");
+} finally {
+	updateIssues();
+}
+
 console.log("Initilising...");
-updateIssues();
-setInterval(updateIssues, rate);
+//updateIssues();
+//setInterval(updateIssues, rate);
 
 console.log("Serving data to clients!");
 
-io.on('connection', function(socket){
-	console.log("A user connected");
-	socket.emit('init', companyName, people);
-	socket.emit('allIssues', issues);
+io.on("connection", function(socket){
+	console.log(socket.id, " connected");
+	socket.emit("init", companyName, people, issues);
 
-	socket.on('moveIssue', function(event){
+	socket.on("moveIssue", function(event){
 		var issuesOldIndex = getAbsoluteIndexFromRelativeIndex(event.oldFixerId, event.oldIndex);
 		var issuesNewIndex = getAbsoluteIndexFromRelativeIndex(event.newFixerId, event.newIndex);
 		move(issues, issuesOldIndex, issuesNewIndex);
-		socket.broadcast.emit('allIssues', issues)
+
+		fs.writeFile("issues.json", JSON.stringify(issues), function(err){
+			if (err) throw err;
+			console.log(socket.id, " changed an issue's priority");
+		});
+
+		socket.broadcast.emit("moveIssue", event);
 	});
 
-	socket.on('disconnect', function(){
-		console.log('A user disconnected');
+	socket.on("disconnect", function(){
+		console.log(socket.id, " disconnected");
 	});
 });
-app.use(express.static('public'));
-app.get('/', function(req, res){
-	res.sendFile(__dirname + '/client.htm');
+app.use(express.static("public"));
+app.get("/", function(req, res){
+	res.sendFile(__dirname + "/client.htm");
 });
 http.listen(3000, function(){
-	console.log('listening on *:3000');
+	console.log("listening on *:3000");
 });
 
 function updateIssues(){
@@ -63,10 +80,10 @@ function updateIssues(){
 		var issueIndex = getIndexOfIssue(issues, newIssue.id);
 		if (issueIndex == -1){ // add new issue
 			issues.push(newIssue);
-			io.emit('addIssue', newIssue);
+			io.emit("addIssue", newIssue);
 		} else { // update existing issue
-			issues[issueIndex] = newIssue;
-			io.emit('updateIssue', issues[issueIndex]);
+			issues[issueIndex] = newIssue; // should really be doing difference checks instead of client-side
+			io.emit("updateIssue", issues[issueIndex]);
 		}
 	});
 
@@ -74,7 +91,7 @@ function updateIssues(){
 		var newIssueIndex = getIndexOfIssue(newIssues, issue.id);
 		if (newIssueIndex === -1){ // delete old issue
 			array.splice(index, 1);
-			io.emit('removeIssue', issue.id);
+			io.emit("removeIssue", issue.id);
 		}
 	});
 }
@@ -95,7 +112,7 @@ function getAbsoluteIndexFromRelativeIndex(fixerId, relIndex){
 }
 
 function getIndexOfIssue(issueList, issueId){
-	return _.indexOf(_.pluck(issueList, 'id'), issueId);
+	return _.indexOf(_.pluck(issueList, "id"), issueId);
 }
 
 function move(array, fromIndex, toIndex) {
@@ -104,22 +121,22 @@ function move(array, fromIndex, toIndex) {
 }
 
 function getAllCompanies(){
-	var res = syncrequest('GET', apiurl + "/companies.json");
+	var res = syncrequest("GET", apiurl + "/companies.json");
 	return JSON.parse(res.getBody());
 }
 
 function getCompanyDetails(companyId){
-	var res = syncrequest('GET', apiurl + "/companies/"+companyId+".json");
+	var res = syncrequest("GET", apiurl + "/companies/"+companyId+".json");
 	return JSON.parse(res.getBody());
 }
 
 function getAllActiveIssues(){
-	var res = syncrequest('GET', apiurl + "/issues/all_active.json?take=500"); // bad
+	var res = syncrequest("GET", apiurl + "/issues/all_active.json?take=500"); // bad
 	return JSON.parse(res.getBody());
 }
 
 function getPeopleInProject(projectId){
-	var res = syncrequest('GET', apiurl + "/projects/"+projectId+"/people.json");
+	var res = syncrequest("GET", apiurl + "/projects/"+projectId+"/people.json");
 	return JSON.parse(res.getBody());
 }
 

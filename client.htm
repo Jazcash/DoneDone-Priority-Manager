@@ -3,7 +3,7 @@
 	<link href="reset.min.css" type="text/css" rel="stylesheet">
 	<link href='https://fonts.googleapis.com/css?family=Roboto:400,100,300,500,900,700' rel='stylesheet' type='text/css'>
 </head>
-<body>
+<body class="disable-selection">
 	<h1></h1>
 	<h2 style="display: none;">Server crashed or was stopped</h2>
 	<div id="issueLists"></div>
@@ -28,9 +28,10 @@
 			}
 		};
 
-		socket.on('init', function(companyName, people){
+		socket.on("init", function(companyName, people, issues){
 			$("h2").hide();
 			$("h1").text(companyName + " DoneDone Manager");
+
 			people.forEach(function(person){
 				$("#issueLists").append('\
 					<div class="block">\
@@ -40,38 +41,45 @@
 						<ul id='+person.id+'></ul>\
 					</div>\
 				');
-				Sortable.create($('#'+person.id)[0], sortableOptions);
+				Sortable.create($("#"+person.id)[0], sortableOptions);
 				updateVisibility(person.id);
 			});
-		});
 
-		socket.on('allIssues', function(issues){
-			$("#issueLists ul").empty();
+			$(".person").on("click", function(){
+				$(this).siblings("ul").children().toggle();
+			});
+
 			issues.forEach(function(issue){
 				addIssue(issue);
 			});
+
+			$(".person").siblings("ul").children().toggle();
 		});
 
-		socket.on('addIssue', function(issue){
+		socket.on("moveIssue", function(event){
+			moveIssue(event.issueId, newFixerId, newIndex);
+		});
+
+		socket.on("addIssue", function(issue){
 			addIssue(issue);
 		});
 
-		socket.on('removeIssue', function(issueId){
+		socket.on("removeIssue", function(issueId){
 			removeIssue(issueId);
 		});
 
-		socket.on('updateIssue', function(issue){
+		socket.on("updateIssue", function(issue){
 			updateIssue(issue);
 		});
 
-		socket.on('disconnect', function(){
+		socket.on("disconnect", function(){
 			$("#issueLists").empty();
 			$("h2").show();
 		});
 
 		function updateIssue(issue){
-			if (issue.fixer.id != $("li#"+issue.id).parent().attr('id'))
-				$("li#"+issue.id).appendTo('ul#'+issue.fixer.id);
+			if (issue.fixer.id != $("li#"+issue.id).parent().attr("id"))
+				$("li#"+issue.id).appendTo("ul#"+issue.fixer.id);
 
 			if ($("li#"+issue.id+" .title").text() !== issue.title)
 				$("li#"+issue.id+" .title").text(issue.title);
@@ -99,6 +107,15 @@
 			updateVisibility(personId);
 		}
 
+		function moveIssue(issueId, newFixerId, newIndex){
+			// if (newIndex == 0){
+			// 	$("li#"+issueId).prependTo("ul#"+newFixerId);
+			// } else {
+			// 	$("li#"+issueId).insertBefore($("ul#"+newFixerId).children().eq(newIndex));
+			// }
+			// very difficult logic needs to go here :(
+		}
+
 		function updateVisibility(personId){
 			if ($("ul#"+personId).children().length < 1){
 				$("ul#"+personId).parent().hide();
@@ -115,6 +132,7 @@
 			font-size: 16px;
 			background: #F5F5F5;
 			padding: 1em;
+			overflow-y: scroll;
 		}
 		h1{
 			text-align: center;
@@ -164,6 +182,7 @@
 			box-shadow: 0 2px 2px 0 rgba(0,0,0,.14),0 3px 1px -2px rgba(0,0,0,.2),0 1px 5px 0 rgba(0,0,0,.12);
 			display: flex;
 			font-size: 24px;
+			cursor: pointer;
 		}
 		ul {
 			padding: 35px 10px 10px 10px;
@@ -195,17 +214,6 @@
 			color: #fff;
 			text-decoration: none;
 		}
-		.dont-break-out{
-			overflow-wrap: break-word;
-			word-wrap: break-word;
-			-ms-word-break: break-all;
-			word-break: break-all;
-			word-break: break-word;
-			-ms-hyphens: auto;
-			-moz-hyphens: auto;
-			-webkit-hyphens: auto;
-			hyphens: auto;
-		}
 		.priority-low{
 			background: #6DA79B;
 		}
@@ -220,6 +228,23 @@
 		}
 		.ghost {
 			opacity: 0.3;
+		}
+		.dont-break-out{
+			overflow-wrap: break-word;
+			word-wrap: break-word;
+			-ms-word-break: break-all;
+			word-break: break-all;
+			word-break: break-word;
+			-ms-hyphens: auto;
+			-moz-hyphens: auto;
+			-webkit-hyphens: auto;
+			hyphens: auto;
+		}
+		.disable-selection {
+			-moz-user-select: none;
+			-ms-user-select: none;
+			-webkit-user-select: none;
+			-webkit-touch-callout: none;
 		}
 	</style>
 </body>
