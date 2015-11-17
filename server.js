@@ -1,20 +1,29 @@
+var fs = require("fs");
 var express = require("express");
 var app = express();
 var http = require("http").Server(app);
 var io = require("socket.io")(http);
-var request = require("request")
 var syncrequest = require("sync-request");
+var colors = require("colors");
 var _ = require("lodash");
-var fs = require("fs");
 
-var subdomain = "quba"; //"apitesting";
-var username = "jcashmore"; //"jazcash";
-var key = fs.readFileSync("key.txt");
-var apiurl = "https://" + username + ":" + key + "@" + subdomain + ".mydonedone.com/issuetracker/api/v2"
+colors.setTheme({silly:'rainbow',input:'grey',verbose:'cyan',prompt:'grey',info:'green',data:'grey',help:'cyan',warn:'yellow',debug:'blue',error:'red'});
+
+var config = {};
+try {
+    stats = fs.lstatSync("config.json");
+    if (stats.isFile()) {
+        config = JSON.parse(fs.readFileSync("config.json"));
+    }
+} catch(e){
+    console.log("No config.json file found - exiting".error);
+    process.exit(1);
+}
+
+var apiurl = "https://" + config.donedone.username + ":" + config.donedone.apikey + "@" + config.donedone.subdomain + ".mydonedone.com/issuetracker/api/v2"
 var colours = JSON.parse(fs.readFileSync("colours.json"));
-var rate = 15000; // donedone rate limit is 500 requests per 30 minutes (every 3600ms)
 
-// company methods require admin access
+// company methods require admin access - the block below is all hacky and dependant on all users having access to a project
 //var companyDetails getCompanyDetails(getAllCompanies()[0].id);
 var companyName = "Quba"; //companyDetails.name;
 var people = getPeopleInProject("34690"); //companyDetails.people;
@@ -28,50 +37,46 @@ try {
 	if (stats.isFile()) {
 		issues = JSON.parse(fs.readFileSync("issues.json"));
 	}
-    console.log("Using stored issues.json file!");
+    console.log("Found issues.json file".info);
 } catch (e) {
-	//console.log(e);
-	console.log("issues.json not found or failed to parse");
+	console.log("issues.json not found or failed to parse".warn);
 } finally {
 	updateIssues();
 }
 
-console.log("Initilising...");
-//updateIssues();
-//setInterval(updateIssues, rate);
+updateIssues();
+setInterval(updateIssues, config.apiUpdateRate);
 
-console.log("Serving data to clients!");
-
-io.on("connection", function(socket){
-	console.log(socket.id, " connected");
-	socket.emit("init", companyName, people, issues);
-
-	socket.on("moveIssue", function(event){
-		var issuesOldIndex = getAbsoluteIndexFromRelativeIndex(event.oldFixerId, event.oldIndex);
-		var issuesNewIndex = getAbsoluteIndexFromRelativeIndex(event.newFixerId, event.newIndex);
-		move(issues, issuesOldIndex, issuesNewIndex);
-
-		fs.writeFile("issues.json", JSON.stringify(issues), function(err){
-			if (err){
-                console.log("error");
-                console.log(err);
-            }
-			console.log(socket.id, " changed an issue's priority, wrote to issues.json");
-		});
-
-		socket.broadcast.emit("moveIssue", event);
-	});
-
-	socket.on("disconnect", function(){
-		console.log(socket.id, " disconnected");
-	});
-});
 app.use(express.static("public"));
+
 app.get("/", function(req, res){
 	res.sendFile(__dirname + "/client.htm");
 });
-http.listen(3000, function(){
-	console.log("listening on *:3000");
+
+http.listen(config.port, config.host, function(){
+	console.log("Listening on %s:%s".info, config.host, config.port);
+});
+
+io.on("connection", function(socket){
+    console.log("%s connected".data, socket.id);
+    socket.emit("init", companyName, people, issues);
+
+    socket.on("moveIssue", function(event){
+        var issuesOldIndex = getAbsoluteIndexFromRelativeIndex(event.oldFixerId, event.oldIndex);
+        var issuesNewIndex = getAbsoluteIndexFromRelativeIndex(event.newFixerId, event.newIndex);
+        move(issues, issuesOldIndex, issuesNewIndex);
+
+        socket.broadcast.emit("moveIssue", event);
+    });
+
+    socket.on("disconnect", function(){
+        console.log("%s disconnected".data, socket.id);
+    });
+});
+
+process.on('SIGINT', function() {
+    console.log("Stopping server...".warn);
+    fs.writeFileSync("issues.json", JSON.stringify(issues));
 });
 
 function updateIssues(){
@@ -83,11 +88,9 @@ function updateIssues(){
 
 		var issueIndex = getIndexOfIssue(issues, newIssue.id);
 		if (issueIndex == -1){ // add new issue
-            //console.log("adding issue", newIssue.id);
 			issues.push(newIssue);
 			io.emit("addIssue", newIssue);
 		} else { // update existing issue
-            //console.log("updating issue", newIssue.id);
 			issues[issueIndex] = newIssue; // should really be doing difference checks instead of client-side
 			io.emit("updateIssue", issues[issueIndex]);
 		}
@@ -96,7 +99,6 @@ function updateIssues(){
 	issues.forEach(function(issue, index, array){
 		var newIssueIndex = getIndexOfIssue(newIssues, issue.id);
 		if (newIssueIndex === -1){ // delete old issue
-            //console.log("removing issue", newIssue.id);
 			array.splice(index, 1);
 			io.emit("removeIssue", issue.id);
 		}
@@ -127,6 +129,12 @@ function move(array, fromIndex, toIndex) {
 	return array;
 }
 
+function getIssueUrl(issue){
+    return "https://" + config.donedone.subdomain + ".mydonedone.com/issuetracker/projects/" + issue.project.id + "/issues/" + issue.order_number;
+}
+
+/* DoneDone API function wrappers */
+
 function getAllCompanies(){
 	var res = syncrequest("GET", apiurl + "/companies.json");
 	return JSON.parse(res.getBody());
@@ -145,8 +153,4 @@ function getAllActiveIssues(){
 function getPeopleInProject(projectId){
 	var res = syncrequest("GET", apiurl + "/projects/"+projectId+"/people.json");
 	return JSON.parse(res.getBody());
-}
-
-function getIssueUrl(issue){
-	return "https://" + subdomain + ".mydonedone.com/issuetracker/projects/" + issue.project.id + "/issues/" + issue.order_number;
 }

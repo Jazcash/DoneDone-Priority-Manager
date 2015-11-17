@@ -1,9 +1,10 @@
 {
   "name": "donedone-priority-manager",
   "version": "1.0.0",
-  "description": "Put your DoneDone password or API key in a file named key.txt",
+  "description": "A pretty web interface that allows manual sorting of DoneDone tickets in order of priority",
   "main": "server.js",
   "dependencies": {
+    "colors": "^1.1.2",
     "express": "^4.13.3",
     "lodash": "^3.10.1",
     "socket.io": "^1.3.7",
