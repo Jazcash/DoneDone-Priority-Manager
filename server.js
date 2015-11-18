@@ -22,11 +22,9 @@ try {
 
 var apiurl = "https://" + config.donedone.username + ":" + config.donedone.apikey + "@" + config.donedone.subdomain + ".mydonedone.com/issuetracker/api/v2"
 var colours = JSON.parse(fs.readFileSync("colours.json"));
-
-// company methods require admin access - the block below is all hacky and dependant on all users having access to a project
-//var companyDetails getCompanyDetails(getAllCompanies()[0].id);
-var companyName = "Quba"; //companyDetails.name;
-var people = getPeopleInProject("34690"); //companyDetails.people;
+var companyDetails = getCompanyDetails(config.donedone.companyid);
+var companyName = companyDetails.name;
+var people = companyDetails.people;
 people.forEach(function(person){
 	person.colour = colours[Math.floor(Math.random() * colours.length)];
 });
@@ -77,6 +75,8 @@ io.on("connection", function(socket){
 process.on('SIGINT', function() {
     console.log("Stopping server...".warn);
     fs.writeFileSync("issues.json", JSON.stringify(issues));
+    console.log("Saved issues".info);
+    process.exit(1);
 });
 
 function updateIssues(){

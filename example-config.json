@@ -4,7 +4,8 @@
     "donedone": {
         "subdomain": "company",
         "username": "bob",
-        "apikey": "1234567890ABCDEFG"
+        "apikey": "1234567890ABCDEFG",
+        "companyid": "12345"
     },
     "apiUpdateRate": 15000
 }
