@@ -146,7 +146,7 @@ function getCompanyDetails(companyId){
 }
 
 function getAllActiveIssues(){
-	var res = syncrequest("GET", apiurl + "/issues/all_active.json?take=5"); // bad
+	var res = syncrequest("GET", apiurl + "/issues/all_active.json?take=500"); // bad
 	return JSON.parse(res.getBody());
 }
 
