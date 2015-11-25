@@ -1,0 +1,163 @@
+[
+    {
+        "name": "Abbey Tax",
+        "ids": [43504, 32797, 42565, 36564],
+        "colour": "#bb2339"
+    },
+    {
+        "name": "All Tools",
+        "ids": [34679],
+        "colour": "#f4cb31"
+    },
+    {
+        "name": "BHP",
+        "ids": [34697],
+        "colour": "#e85100"
+    },
+    {
+        "name": "BM TRADA",
+        "ids": [34680, 43594],
+
+        "colour": "#16B2AE"
+    },
+    {
+        "name": "Cape UK",
+        "ids": [37228],
+        "colour": "#FE5B00"
+    },
+    {
+        "name": "Casewise",
+        "ids": [34681],
+        "colour": "#c92b35"
+    },
+    {
+        "name": "Chatsworth",
+        "ids": [34677],
+        "colour": "#ab0535"
+    },
+    {
+        "name": "Door Deals",
+        "ids": [34682],
+        "colour": "#00aa4e"
+    },
+    {
+        "name": "Element",
+        "ids": [34683],
+        "colour": "#0095c8"
+    },
+    {
+        "name": "Emergent Crown",
+        "ids": [34695],
+        "colour": "#8eb655"
+    },
+    {
+        "name": "England Netball",
+        "ids": [34678],
+        "colour": "#b42d34"
+    },
+    {
+        "name": "ETOA",
+        "ids": [34684],
+        "colour": "#0d1232"
+    },
+    {
+        "name": "Exemplar",
+        "ids": [34702],
+        "colour": "#d0d82f"
+    },
+    {
+        "name": "FARO",
+        "ids": [34691],
+        "colour": "#0055a0"
+    },
+    {
+        "name": "Frog",
+        "ids": [34693],
+        "colour": "#0071B9"
+    },
+    {
+        "name": "Gazprom",
+        "ids": [34701],
+        "colour": "#00adef"
+    },
+    {
+        "name": "Global Bike Tours",
+        "ids": [38358],
+        "colour": "#C03910"
+    },
+    {
+        "name": "HFMA",
+        "ids": [34685],
+        "colour": "#ff6600"
+    },
+    {
+        "name": "Ideal Standard",
+        "ids": [34688],
+        "colour": "#E6E7E7"
+    },
+    {
+        "name": "Interfleet",
+        "ids": [34686],
+        "colour": "#79bc1d"
+    },
+    {
+        "name": "Irwin Mitchell",
+        "ids": [34699],
+        "colour": "#a51843"
+    },
+    {
+        "name": "ISUOG",
+        "ids": [34687],
+        "colour": "#de0226"
+    },
+    {
+        "name": "Kodak Lens UK",
+        "ids": [42187],
+        "colour": "#fc3"
+    },
+    {
+        "name": "London Luton Airport",
+        "ids": [37759, 38471],
+        "colour": "#232628"
+    },
+    {
+        "name": "NICEIC",
+        "ids": [34700],
+        "colour": "#3a4547"
+    },
+    {
+        "name": "Phil Hesketh",
+        "ids": [42180],
+        "colour": "#5e2020"
+    },
+    {
+        "name": "Priory",
+        "ids": [34692],
+        "colour": "#5ca86a"
+    },
+    {
+        "name": "Quba",
+        "ids": [34690],
+        "colour": "#c1202b"
+    },
+    {
+        "name": "Rolawn/Hallstone",
+        "ids": [34689],
+        "colour": "#1a8946"
+    },
+    {
+        "name": "Stowe",
+        "ids": [37758, 38466, 43505],
+        "colour": "#a90061"
+    },
+    {
+        "name": "Texthelp",
+        "ids": [34755, 38405, 43506],
+        "colour": "#006464"
+    },
+    {
+        "name": "Toys R Us",
+        "ids": [34694],
+        "colour": "#ff7000"
+    }
+]

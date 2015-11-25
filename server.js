@@ -79,6 +79,13 @@ process.on('SIGINT', function() {
     process.exit(1);
 });
 
+process.on('uncaughtException', function(err) {
+    console.log('Caught exception: ' + err);
+    fs.writeFileSync("issues.json", JSON.stringify(issues));
+    console.log("Saved issues".info);
+    process.exit(1);
+});
+
 function updateIssues(){
 	var newIssues = getAllActiveIssues().issues;
 
