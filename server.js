@@ -38,8 +38,6 @@ try {
     console.log("Found issues.json file".info);
 } catch (e) {
 	console.log("issues.json not found or failed to parse".warn);
-} finally {
-	updateIssues();
 }
 
 updateIssues();
